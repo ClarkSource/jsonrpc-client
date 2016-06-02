@@ -1,4 +1,5 @@
 require 'json'
+require 'jsonrpc'
 require 'jsonrpc/base_client'
 require 'jsonrpc/request'
 require 'jsonrpc/helper'

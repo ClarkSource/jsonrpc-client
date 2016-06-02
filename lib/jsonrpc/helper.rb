@@ -13,9 +13,9 @@ module JSONRPC
     end
 
     def connection
-      @connection ||= ::Faraday.new do |connection|
-        connection.response :logger, ::JSONRPC.logger
-        connection.adapter ::Faraday.default_adapter
+      @connection ||= Faraday.new do |connection|
+        connection.response :logger, Logger.new(STDOUT)
+        connection.adapter Faraday.default_adapter
       end
     end
   end
