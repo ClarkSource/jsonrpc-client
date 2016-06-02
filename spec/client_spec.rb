@@ -8,7 +8,7 @@ module JSONRPC
 
     before(:each) do
       @resp_mock = double('http_response')
-      Base.stub(:make_id).and_return(1)
+      allow(Base).to receive(:make_id).and_return(1)
     end
 
     after(:each) do
@@ -16,11 +16,11 @@ module JSONRPC
 
     describe "hidden methods" do
       it "should reveal inspect" do
-        Client.new(SPEC_URL).inspect.should match /JSONRPC::Client/
+        expect(Client.new(SPEC_URL).inspect).to match /JSONRPC::Client/
       end
 
       it "should reveal to_s" do
-        Client.new(SPEC_URL).to_s.should match /JSONRPC::Client/
+        expect(Client.new(SPEC_URL).to_s).to match /JSONRPC::Client/
       end
     end
 
@@ -35,21 +35,21 @@ module JSONRPC
 
       before(:each) do
         response = JSON.generate(BOILERPLATE.merge({'result' => 42}))
-        @resp_mock.should_receive(:body).at_least(:once).and_return(response)
+        expect(@resp_mock).to receive(:body).at_least(:once).and_return(response)
         @client = Client.new(SPEC_URL, :connection => connection)
       end
 
       context "when using an array of args" do
         it "sends a request with the correct method and args" do
-          connection.should_receive(:post).with(SPEC_URL, expected, {:content_type => 'application/json'}).and_return(@resp_mock)
-          @client.invoke('foo', [1, 2, 3]).should == 42
+          expect(connection).to receive(:post).with(SPEC_URL, expected, {:content_type => 'application/json'}).and_return(@resp_mock)
+          expect(@client.invoke('foo', [1, 2, 3])).to eq(42)
         end
       end
 
       context "with headers" do
         it "adds additional headers" do
-          connection.should_receive(:post).with(SPEC_URL, expected, {:content_type => 'application/json', "X-FOO" => "BAR"}).and_return(@resp_mock)
-          @client.invoke('foo', [1, 2, 3], "X-FOO" => "BAR").should == 42
+          expect(connection).to receive(:post).with(SPEC_URL, expected, {:content_type => 'application/json', "X-FOO" => "BAR"}).and_return(@resp_mock)
+          expect(@client.invoke('foo', [1, 2, 3], "X-FOO" => "BAR")).to eq(42)
         end
       end
     end
@@ -66,26 +66,26 @@ module JSONRPC
         end
         it "sends a valid JSON-RPC request and returns the result" do
           response = JSON.generate(BOILERPLATE.merge({'result' => 42}))
-          connection.should_receive(:post).with(SPEC_URL, @expected, {:content_type => 'application/json'}).and_return(@resp_mock)
-          @resp_mock.should_receive(:body).at_least(:once).and_return(response)
+          expect(connection).to receive(:post).with(SPEC_URL, @expected, {:content_type => 'application/json'}).and_return(@resp_mock)
+          expect(@resp_mock).to receive(:body).at_least(:once).and_return(response)
           client = Client.new(SPEC_URL, :connection => connection)
-          client.foo(1,2,3).should == 42
+          expect(client.foo(1,2,3)).to eq(42)
         end
 
         it "sends a valid JSON-RPC request with custom options" do
           response = JSON.generate(BOILERPLATE.merge({'result' => 42}))
-          connection.should_receive(:post).with(SPEC_URL, @expected, {:content_type => 'application/json', :timeout => 10000}).and_return(@resp_mock)
-          @resp_mock.should_receive(:body).at_least(:once).and_return(response)
+          expect(connection).to receive(:post).with(SPEC_URL, @expected, {:content_type => 'application/json', :timeout => 10000}).and_return(@resp_mock)
+          expect(@resp_mock).to receive(:body).at_least(:once).and_return(response)
           client = Client.new(SPEC_URL, :timeout => 10000, :connection => connection)
-          client.foo(1,2,3).should == 42
+          expect(client.foo(1,2,3)).to eq(42)
         end
 
         it "sends a valid JSON-RPC request with custom content_type" do
           response = JSON.generate(BOILERPLATE.merge({'result' => 42}))
-          connection.should_receive(:post).with(SPEC_URL, @expected, {:content_type => 'application/json-rpc', :timeout => 10000}).and_return(@resp_mock)
-          @resp_mock.should_receive(:body).at_least(:once).and_return(response)
+          expect(connection).to receive(:post).with(SPEC_URL, @expected, {:content_type => 'application/json-rpc', :timeout => 10000}).and_return(@resp_mock)
+          expect(@resp_mock).to receive(:body).at_least(:once).and_return(response)
           client = Client.new(SPEC_URL, :timeout => 10000, :content_type => 'application/json-rpc', :connection => connection)
-          client.foo(1,2,3).should == 42
+          expect(client.foo(1,2,3)).to eq(42)
         end
       end
     end
@@ -106,9 +106,9 @@ module JSONRPC
           {"jsonrpc" => "2.0", "result" => ["hello", 5], "id" => "9"}
         ])
 
-        Base.stub(:make_id).and_return('1', '2', '5', '9')
-        connection.should_receive(:post).with(SPEC_URL, batch, {:content_type => 'application/json'}).and_return(@resp_mock)
-        @resp_mock.should_receive(:body).at_least(:once).and_return(response)
+        allow(Base).to receive(:make_id).and_return('1', '2', '5', '9')
+        expect(connection).to receive(:post).with(SPEC_URL, batch, {:content_type => 'application/json'}).and_return(@resp_mock)
+        expect(@resp_mock).to receive(:body).at_least(:once).and_return(response)
         client = Client.new(SPEC_URL, :connection => connection)
 
         sum = subtract = foo = data = nil
@@ -119,17 +119,17 @@ module JSONRPC
           data = batch.get_data
         end
 
-        sum.succeeded?.should be_truthy
-        sum.is_error?.should be_falsey
-        sum.result.should == 7
+        expect(sum.succeeded?).to be_truthy
+        expect(sum.is_error?).to be_falsey
+        expect(sum.result).to eq(7)
 
-        subtract.result.should == 19
+        expect(subtract.result).to eq(19)
 
-        foo.is_error?.should be_truthy
-        foo.succeeded?.should be_falsey
-        foo.error['code'].should == -32601
+        expect(foo.is_error?).to be_truthy
+        expect(foo.succeeded?).to be_falsey
+        expect(foo.error['code']).to eq(-32601)
 
-        data.result.should == ['hello', 5]
+        expect(data.result).to eq(['hello', 5])
 
 
         expect { client.sum(1, 2) }.to raise_error(NoMethodError)
