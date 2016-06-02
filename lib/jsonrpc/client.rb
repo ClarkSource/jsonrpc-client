@@ -26,7 +26,6 @@ module JSONRPC
     private
     def send_single_request(method, args, options)
       request = JSONRPC::Request.new(method, args, make_id)
-      puts request.inspect
       resp = @helper.connection.post(@url, request.to_json, @helper.options(options))
 
       if resp.nil? || resp.body.nil? || resp.body.empty?
