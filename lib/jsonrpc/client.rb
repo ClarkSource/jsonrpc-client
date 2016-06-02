@@ -25,15 +25,9 @@ module JSONRPC
 
     private
     def send_single_request(method, args, options)
-      post_data = ::JSON.generate({
-        'jsonrpc' => JSON_RPC_VERSION,
-        'method'  => method,
-        'params'  => args,
-        'id'      => make_id
-      })
-
-      puts post_data
-      resp = @helper.connection.post(@url, post_data, @helper.options(options))
+      request = JSONRPC::Request.new(method, args, make_id)
+      puts request.inspect
+      resp = @helper.connection.post(@url, request.to_json, @helper.options(options))
 
       if resp.nil? || resp.body.nil? || resp.body.empty?
         raise ::JSONRPC::Error::InvalidResponse.new

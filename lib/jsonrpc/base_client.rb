@@ -3,8 +3,6 @@ require 'uri'
 
 module JSONRPC
   class BaseClient
-    JSON_RPC_VERSION = '2.0'
-
     def make_id
       SecureRandom.hex(16)
     end
