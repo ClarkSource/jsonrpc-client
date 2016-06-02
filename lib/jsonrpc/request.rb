@@ -18,7 +18,7 @@ module JSONRPC
     end
 
     def to_json(*a)
-      MultiJson.encode(self.to_h)
+      JSON.generate(self.to_h)
     end
 
   end

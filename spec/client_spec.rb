@@ -25,7 +25,7 @@ module JSONRPC
     end
 
     describe "#invoke" do
-      let(:expected) { MultiJson.encode({
+      let(:expected) { JSON.generate({
          'jsonrpc' => '2.0',
          'method'  => 'foo',
          'params'  => [1,2,3],
@@ -34,7 +34,7 @@ module JSONRPC
       }
 
       before(:each) do
-        response = MultiJson.encode(BOILERPLATE.merge({'result' => 42}))
+        response = JSON.generate(BOILERPLATE.merge({'result' => 42}))
         @resp_mock.should_receive(:body).at_least(:once).and_return(response)
         @client = Client.new(SPEC_URL, :connection => connection)
       end
@@ -57,7 +57,7 @@ module JSONRPC
     describe "sending a single request" do
       context "when using positional parameters" do
         before(:each) do
-          @expected = MultiJson.encode({
+          @expected = JSON.generate({
                        'jsonrpc' => '2.0',
                        'method'  => 'foo',
                        'params'  => [1,2,3],
@@ -65,7 +65,7 @@ module JSONRPC
           })
         end
         it "sends a valid JSON-RPC request and returns the result" do
-          response = MultiJson.encode(BOILERPLATE.merge({'result' => 42}))
+          response = JSON.generate(BOILERPLATE.merge({'result' => 42}))
           connection.should_receive(:post).with(SPEC_URL, @expected, {:content_type => 'application/json'}).and_return(@resp_mock)
           @resp_mock.should_receive(:body).at_least(:once).and_return(response)
           client = Client.new(SPEC_URL, :connection => connection)
@@ -73,7 +73,7 @@ module JSONRPC
         end
 
         it "sends a valid JSON-RPC request with custom options" do
-          response = MultiJson.encode(BOILERPLATE.merge({'result' => 42}))
+          response = JSON.generate(BOILERPLATE.merge({'result' => 42}))
           connection.should_receive(:post).with(SPEC_URL, @expected, {:content_type => 'application/json', :timeout => 10000}).and_return(@resp_mock)
           @resp_mock.should_receive(:body).at_least(:once).and_return(response)
           client = Client.new(SPEC_URL, :timeout => 10000, :connection => connection)
@@ -81,7 +81,7 @@ module JSONRPC
         end
 
         it "sends a valid JSON-RPC request with custom content_type" do
-          response = MultiJson.encode(BOILERPLATE.merge({'result' => 42}))
+          response = JSON.generate(BOILERPLATE.merge({'result' => 42}))
           connection.should_receive(:post).with(SPEC_URL, @expected, {:content_type => 'application/json-rpc', :timeout => 10000}).and_return(@resp_mock)
           @resp_mock.should_receive(:body).at_least(:once).and_return(response)
           client = Client.new(SPEC_URL, :timeout => 10000, :content_type => 'application/json-rpc', :connection => connection)
@@ -92,14 +92,14 @@ module JSONRPC
 
     describe "sending a batch request" do
       it "sends a valid JSON-RPC batch request and puts the results in the response objects" do
-        batch = MultiJson.encode([
+        batch = JSON.generate([
           {"jsonrpc" => "2.0", "method" => "sum", "params" => [1,2,4], "id" => "1"},
           {"jsonrpc" => "2.0", "method" => "subtract", "params" => [42,23], "id" => "2"},
           {"jsonrpc" => "2.0", "method" => "foo_get", "params" => [{"name" => "myself"}], "id" => "5"},
           {"jsonrpc" => "2.0", "method" => "get_data", "id" => "9"}
         ])
 
-        response = MultiJson.encode([
+        response = JSON.generate([
           {"jsonrpc" => "2.0", "result" => 7, "id" => "1"},
           {"jsonrpc" => "2.0", "result" => 19, "id" => "2"},
           {"jsonrpc" => "2.0", "error" => {"code" => -32601, "message" => "Method not found."}, "id" => "5"},
@@ -119,14 +119,14 @@ module JSONRPC
           data = batch.get_data
         end
 
-        sum.succeeded?.should be_true
-        sum.is_error?.should be_false
+        sum.succeeded?.should be_truthy
+        sum.is_error?.should be_falsey
         sum.result.should == 7
 
         subtract.result.should == 19
 
-        foo.is_error?.should be_true
-        foo.succeeded?.should be_false
+        foo.is_error?.should be_truthy
+        foo.succeeded?.should be_falsey
         foo.error['code'].should == -32601
 
         data.result.should == ['hello', 5]

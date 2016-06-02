@@ -1,6 +1,6 @@
-require 'multi_json'
 require 'faraday'
 require 'uri'
+require 'json'
 require 'jsonrpc/request'
 require 'jsonrpc/response'
 require 'jsonrpc/error'
@@ -101,7 +101,7 @@ module JSONRPC
 
   private
     def send_batch_request(batch)
-      post_data = ::MultiJson.encode(batch)
+      post_data = ::JSON.generate(batch)
       resp = @helper.connection.post(@url, post_data, @helper.options)
       if resp.nil? || resp.body.nil? || resp.body.empty?
         raise ::JSONRPC::Error::InvalidResponse.new
@@ -130,7 +130,7 @@ module JSONRPC
       response = send_batch_request(batch)
 
       begin
-        responses = ::MultiJson.decode(response, ::JSONRPC.decode_options)
+        responses = ::JSON.parse(response)
       rescue
         raise ::JSONRPC::Error::InvalidJSON.new(json)
       end
@@ -149,7 +149,7 @@ module JSONRPC
       resp = send_single_request(method.to_s, args, options)
 
       begin
-        data = ::MultiJson.decode(resp, ::JSONRPC.decode_options)
+        data = ::JSON.parse(resp)
       rescue
         raise ::JSONRPC::Error::InvalidJSON.new(resp)
       end
@@ -162,7 +162,7 @@ module JSONRPC
 
     private
     def send_single_request(method, args, options)
-      post_data = ::MultiJson.encode({
+      post_data = ::JSON.generate({
         'jsonrpc' => ::JSONRPC::Base::JSON_RPC_VERSION,
         'method'  => method,
         'params'  => args,
