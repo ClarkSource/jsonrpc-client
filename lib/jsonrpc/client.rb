@@ -1,111 +1,14 @@
-require 'uri'
 require 'json'
+require 'jsonrpc/base_client'
 require 'jsonrpc/request'
 require 'jsonrpc/helper'
 require 'jsonrpc/response'
 require 'jsonrpc/error'
 require 'jsonrpc/version'
-require 'securerandom'
 
 module JSONRPC
-  class Base < BasicObject
-    JSON_RPC_VERSION = '2.0'
-
-    def self.make_id
-      SecureRandom.hex(16)
-    end
-
-    def initialize(url, opts = {})
-      @url = ::URI.parse(url).to_s
-      @helper = ::JSONRPC::Helper.new(opts)
-    end
-
-    def to_s
-      inspect
-    end
-
-    def inspect
-      "#<#{self.class.name}:0x00%08x>" % (__id__ * 2)
-    end
-
-    def class
-      (class << self; self end).superclass
-    end
-
-  private
-    def raise(*args)
-      ::Kernel.raise(*args)
-    end
-  end
-
-  class BatchClient < Base
-    attr_reader :batch
-
-    def initialize(url, opts = {})
-      super
-      @batch = []
-      @alive = true
-      yield self
-      send_batch
-      @alive = false
-    end
-
-    def method_missing(sym, *args, &block)
-      if @alive
-        request = ::JSONRPC::Request.new(sym.to_s, args)
-        push_batch_request(request)
-      else
-        super
-      end
-    end
-
-  private
-    def send_batch_request(batch)
-      post_data = ::JSON.generate(batch)
-      resp = @helper.connection.post(@url, post_data, @helper.options)
-      if resp.nil? || resp.body.nil? || resp.body.empty?
-        raise ::JSONRPC::Error::InvalidResponse.new
-      end
-
-      resp.body
-    end
-
-    def process_batch_response(responses)
-      responses.each do |resp|
-        saved_response = @batch.map { |r| r[1] }.select { |r| r.id == resp['id'] }.first
-        raise ::JSONRPC::Error::InvalidResponse.new if saved_response.nil?
-        saved_response.populate!(resp)
-      end
-    end
-
-    def push_batch_request(request)
-      request.id = ::JSONRPC::Base.make_id
-      response = ::JSONRPC::Response.new(request.id)
-      @batch << [request, response]
-      response
-    end
-
-    def send_batch
-      batch = @batch.map(&:first) # get the requests
-      response = send_batch_request(batch)
-
-      begin
-        responses = ::JSON.parse(response)
-      rescue
-        raise ::JSONRPC::Error::InvalidJSON.new(json)
-      end
-
-      process_batch_response(responses)
-      @batch = []
-    end
-  end
-
-  class Client < Base
-    def method_missing(method, *args, &block)
-      invoke(method, args)
-    end
-
-    def invoke(method, args, options = nil)
+  class Client < BaseClient
+    def invoke(method, args, options = {})
       resp = send_single_request(method.to_s, args, options)
 
       begin
@@ -123,11 +26,13 @@ module JSONRPC
     private
     def send_single_request(method, args, options)
       post_data = ::JSON.generate({
-        'jsonrpc' => ::JSONRPC::Base::JSON_RPC_VERSION,
+        'jsonrpc' => JSON_RPC_VERSION,
         'method'  => method,
         'params'  => args,
-        'id'      => ::JSONRPC::Base.make_id
+        'id'      => make_id
       })
+
+      puts post_data
       resp = @helper.connection.post(@url, post_data, @helper.options(options))
 
       if resp.nil? || resp.body.nil? || resp.body.empty?
@@ -151,7 +56,7 @@ module JSONRPC
 
     def valid_response?(data)
       return false if !data.is_a?(::Hash)
-      return false if data['jsonrpc'] != ::JSONRPC::Base::JSON_RPC_VERSION
+      return false if data['jsonrpc'] != JSON_RPC_VERSION
       return false if !data.has_key?('id')
       return false if data.has_key?('error') && data.has_key?('result')
 

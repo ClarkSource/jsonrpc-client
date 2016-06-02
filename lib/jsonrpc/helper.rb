@@ -8,12 +8,8 @@ module JSONRPC
       @connection = @options.delete(:connection)
     end
 
-    def options(additional_options = nil)
-      if additional_options
-        additional_options.merge(@options)
-      else
-        @options
-      end
+    def options(additional_options = {})
+      additional_options.merge(@options)
     end
 
     def connection
