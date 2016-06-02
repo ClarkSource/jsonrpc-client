@@ -1,58 +1,18 @@
-require 'faraday'
 require 'uri'
 require 'json'
 require 'jsonrpc/request'
+require 'jsonrpc/helper'
 require 'jsonrpc/response'
 require 'jsonrpc/error'
 require 'jsonrpc/version'
+require 'securerandom'
 
 module JSONRPC
-  def self.logger=(logger)
-    @logger = logger
-  end
-
-  def self.logger
-    @logger
-  end
-
-  def self.decode_options=(options)
-    @decode_options = options
-  end
-
-  def self.decode_options
-    @decode_options
-  end
-
-  @decode_options = {}
-
-  class Helper
-    def initialize(options)
-      @options = options
-      @options[:content_type] ||= 'application/json'
-      @connection = @options.delete(:connection)
-    end
-
-    def options(additional_options = nil)
-      if additional_options
-        additional_options.merge(@options)
-      else
-        @options
-      end
-    end
-
-    def connection
-      @connection || ::Faraday.new { |connection|
-        connection.response :logger, ::JSONRPC.logger
-        connection.adapter ::Faraday.default_adapter
-      }
-    end
-  end
-
   class Base < BasicObject
     JSON_RPC_VERSION = '2.0'
 
     def self.make_id
-      rand(10**12)
+      SecureRandom.hex(16)
     end
 
     def initialize(url, opts = {})
