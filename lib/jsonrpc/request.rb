@@ -2,10 +2,11 @@ module JSONRPC
   class Request
     attr_accessor :method, :params, :id
 
-    def initialize(method, params, id = nil)
+    def initialize(method, params, id = nil, additional_root_params = {})
       @method = method
       @params = params
       @id = id
+      @root_params = additional_root_params
     end
 
     def to_h
@@ -16,6 +17,10 @@ module JSONRPC
         id: id
       }
 
+      # Merge in the default root params (used for token param)
+      return_hash.merge!(@root_params)
+
+      # Remove the params if none were provided
       return_hash.delete :params unless should_include_params?
 
       return_hash

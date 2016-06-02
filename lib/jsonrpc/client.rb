@@ -8,6 +8,10 @@ require 'jsonrpc/version'
 
 module JSONRPC
   class Client < BaseClient
+    def authenticate_with_token(token)
+      additional_root_params[:token] = token
+    end
+
     def invoke(method, args, options = {})
       resp = send_single_request(method.to_s, args, options)
 
@@ -25,7 +29,7 @@ module JSONRPC
 
     private
     def send_single_request(method, args, options)
-      request = JSONRPC::Request.new(method, args, make_id)
+      request = JSONRPC::Request.new(method, args, make_id, additional_root_params)
       resp = @helper.connection.post(@url, request.to_json, @helper.options(options))
 
       if resp.nil? || resp.body.nil? || resp.body.empty?
@@ -66,6 +70,10 @@ module JSONRPC
       true
     rescue
       false
+    end
+
+    def additional_root_params
+      @additional_root_params ||= {}
     end
   end
 end
